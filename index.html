@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>SPA Users App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    #app {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    nav.breadcrumbs {
+      margin-bottom: 20px;
+    }
+    nav.breadcrumbs ul {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      gap: 10px;
+      font-size: 14px;
+    }
+    nav.breadcrumbs ul li::after {
+      content: '>';
+      margin-left: 10px;
+    }
+    nav.breadcrumbs ul li:last-child::after {
+      content: '';
+    }
+    input.search {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    ul.list {
+      list-style: none;
+      padding: 0;
+    }
+    ul.list li {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    ul.list li:last-child {
+      border-bottom: none;
+    }
+    h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const routes = {
+      '#users': {
+        title: 'Пользователи',
+        url: 'https://jsonplaceholder.typicode.com/users',
+        filter: (item, val) => item.name.toLowerCase().includes(val) || item.email.toLowerCase().includes(val),
+        render: item => `${item.name} (${item.email})`
+      },
+      '#users#todos': {
+        title: 'Тудушки',
+        url: 'https://jsonplaceholder.typicode.com/todos',
+        filter: (item, val) => item.title.toLowerCase().includes(val),
+        render: item => `${item.title} [${item.completed ? '✓' : '✗'}]`
+      },
+      '#users#posts': {
+        title: 'Посты',
+        url: 'https://jsonplaceholder.typicode.com/posts',
+        filter: (item, val) => item.title.toLowerCase().includes(val) || item.body.toLowerCase().includes(val),
+        render: item => `<strong>${item.title}</strong><br>${item.body}`
+      },
+      '#users#posts#comments': {
+        title: 'Комментарии',
+        url: 'https://jsonplaceholder.typicode.com/comments',
+        filter: (item, val) => item.name.toLowerCase().includes(val) || item.body.toLowerCase().includes(val),
+        render: item => `<strong>${item.name}</strong><br>${item.body}`
+      }
+    };
+
+    window.addEventListener('hashchange', router);
+    window.addEventListener('DOMContentLoaded', router);
+
+    function router() {
+      const hash = location.hash || '#users';
+      const config = routes[hash];
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+
+      renderBreadcrumbs(hash, app);
+
+      const title = document.createElement('h2');
+      title.textContent = config.title;
+      app.appendChild(title);
+
+      const input = document.createElement('input');
+      input.className = 'search';
+      input.placeholder = 'Поиск...';
+      app.appendChild(input);
+
+      fetch(config.url)
+        .then(res => res.json())
+        .then(data => {
+          renderList(data);
+          input.addEventListener('input', () => {
+            const val = input.value.toLowerCase();
+            const filtered = val ? data.filter(item => config.filter(item, val)) : data;
+            renderList(filtered);
+          });
+        });
+
+      function renderList(items) {
+        const oldList = app.querySelector('ul.list');
+        if (oldList) oldList.remove();
+
+        const ul = document.createElement('ul');
+        ul.className = 'list';
+        items.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = config.render(item);
+          ul.appendChild(li);
+        });
+        app.appendChild(ul);
+      }
+    }
+
+    function renderBreadcrumbs(hash, container) {
+      const map = {
+        '#users': 'Пользователи',
+        '#users#todos': 'Тудушки',
+        '#users#posts': 'Посты',
+        '#users#posts#comments': 'Комментарии'
+      };
+      const nav = document.createElement('nav');
+      nav.className = 'breadcrumbs';
+      const ul = document.createElement('ul');
+      let path = '';
+      hash.split('#').filter(Boolean).forEach(part => {
+        path += `#${part}`;
+        const li = document.createElement('li');
+        li.textContent = map[path] || part;
+        ul.appendChild(li);
+      });
+      nav.appendChild(ul);
+      container.appendChild(nav);
+    }
+  </script>
+</body>
+</html>
