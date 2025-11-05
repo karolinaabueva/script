@@ -48,6 +48,9 @@
     ul.list li {
       padding: 10px;
       border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     ul.list li:last-child {
       border-bottom: none;
@@ -55,12 +58,175 @@
     h2 {
       margin-top: 0;
     }
+    form {
+      margin-bottom: 20px;
+    }
+    form input {
+      margin-right: 10px;
+      padding: 6px;
+    }
+    form button {
+      padding: 6px 12px;
+    }
   </style>
 </head>
 <body>
   <div id="app"></div>
   <script>
+    const routes = {
+      '#users': {
+        title: 'Пользователи',
+        url: 'https://jsonplaceholder.typicode.com/users',
+        filter: (item, val) => item.name.toLowerCase().includes(val) || item.email.toLowerCase().includes(val),
+        render: item => `${item.name} (${item.email})`,
+        localKey: 'customUsers'
+      },
+      '#users#todos': {
+        title: 'Тудушки',
+        url: 'https://jsonplaceholder.typicode.com/todos',
+        filter: (item, val) => item.title.toLowerCase().includes(val),
+        render: item => `${item.title} [${item.completed ? '✓' : '✗'}]`,
+        localKey: 'customTodos'
+      },
+      '#users#posts': {
+        title: 'Посты',
+        url: 'https://jsonplaceholder.typicode.com/posts',
+        filter: (item, val) => item.title.toLowerCase().includes(val) || item.body.toLowerCase().includes(val),
+        render: item => `<strong>${item.title}</strong><br>${item.body}`
+      },
+      '#users#posts#comments': {
+        title: 'Комментарии',
+        url: 'https://jsonplaceholder.typicode.com/comments',
+        filter: (item, val) => item.name.toLowerCase().includes(val) || item.body.toLowerCase().includes(val),
+        render: item => `<strong>${item.name}</strong><br>${item.body}`
+      }
+    };
 
+    window.addEventListener('hashchange', router);
+    window.addEventListener('DOMContentLoaded', router);
+
+    function router() {
+      const hash = location.hash || '#users';
+      const config = routes[hash];
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+
+      renderBreadcrumbs(hash, app);
+
+      const title = document.createElement('h2');
+      title.textContent = config.title;
+      app.appendChild(title);
+
+      const input = document.createElement('input');
+      input.className = 'search';
+      input.placeholder = 'Поиск...';
+      app.appendChild(input);
+
+      const form = document.createElement('form');
+      form.innerHTML = getFormHTML(hash);
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        if (hash === '#users') {
+          const name = form.querySelector('#newName').value;
+          const email = form.querySelector('#newEmail').value;
+          const users = JSON.parse(localStorage.getItem('customUsers') || '[]');
+          users.push({ name, email });
+          localStorage.setItem('customUsers', JSON.stringify(users));
+          renderList([...data, ...users]);
+        } else if (hash === '#users#todos') {
+          const userId = +form.querySelector('#todoUserId').value;
+          const title = form.querySelector('#todoTitle').value;
+          const todos = JSON.parse(localStorage.getItem('customTodos') || '[]');
+          todos.push({ userId, title, completed: false });
+          localStorage.setItem('customTodos', JSON.stringify(todos));
+          renderList([...data, ...todos]);
+        }
+      });
+      app.appendChild(form);
+
+      let data = [];
+      fetch(config.url)
+        .then(res => res.json())
+        .then(apiData => {
+          const localData = config.localKey ? JSON.parse(localStorage.getItem(config.localKey) || '[]') : [];
+          data = [...apiData, ...localData];
+          renderList(data);
+          input.addEventListener('input', () => {
+            const val = input.value.toLowerCase();
+            const filtered = val ? data.filter(item => config.filter(item, val)) : data;
+            renderList(filtered);
+          });
+        });
+
+      function renderList(items) {
+        const oldList = app.querySelector('ul.list');
+        if (oldList) oldList.remove();
+
+        const ul = document.createElement('ul');
+        ul.className = 'list';
+        items.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = config.render(item);
+
+          if (config.localKey && !item.id) {
+            const btn = document.createElement('button');
+            btn.textContent = 'Удалить';
+            btn.onclick = () => {
+              const updated = JSON.parse(localStorage.getItem(config.localKey)).filter(i => {
+                if (config.localKey === 'customUsers') return i.email !== item.email;
+                if (config.localKey === 'customTodos') return i.title !== item.title;
+                return true;
+              });
+              localStorage.setItem(config.localKey, JSON.stringify(updated));
+              renderList([...data.filter(i => i.id), ...updated]);
+            };
+            li.appendChild(btn);
+          }
+
+          ul.appendChild(li);
+        });
+        app.appendChild(ul);
+      }
+    }
+
+    function renderBreadcrumbs(hash, container) {
+      const map = {
+        '#users': 'Пользователи',
+        '#users#todos': 'Тудушки',
+        '#users#posts': 'Посты',
+        '#users#posts#comments': 'Комментарии'
+      };
+      const nav = document.createElement('nav');
+      nav.className = 'breadcrumbs';
+      const ul = document.createElement('ul');
+      let path = '';
+      hash.split('#').filter(Boolean).forEach(part => {
+        path += `#${part}`;
+        const li = document.createElement('li');
+        li.textContent = map[path] || part;
+        ul.appendChild(li);
+      });
+      nav.appendChild(ul);
+      container.appendChild(nav);
+    }
+
+    function getFormHTML(hash) {
+      if (hash === '#users') {
+        return `
+          <input type="text" id="newName" placeholder="Имя" required />
+          <input type="email" id="newEmail" placeholder="Email" required />
+          <button type="submit">Добавить пользователя</button>
+        `;
+      }
+      if (hash === '#users#todos') {
+        return `
+          <input type="number" id="todoUserId" placeholder="User ID" required />
+          <input type="text" id="todoTitle" placeholder="Задача" required />
+          <button type="submit">Добавить TODO</button>
+        `;
+      }
+      return '';
+    }
   </script>
 </body>
 </html>
