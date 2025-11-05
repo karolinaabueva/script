@@ -1,0 +1,77 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #f4f4f4;
+}
+
+#app {
+  max-width: 800px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+nav.breadcrumbs {
+  margin-bottom: 20px;
+}
+
+nav.breadcrumbs ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+}
+
+nav.breadcrumbs ul li::after {
+  content: '>';
+  margin-left: 10px;
+}
+
+nav.breadcrumbs ul li:last-child::after {
+  content: '';
+}
+
+input.search {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+ul.list {
+  list-style: none;
+  padding: 0;
+}
+
+ul.list li {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+ul.list li:last-child {
+  border-bottom: none;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+form input {
+  margin-right: 10px;
+  padding: 6px;
+}
+
+form button {
+  padding: 6px 12px;
+}
